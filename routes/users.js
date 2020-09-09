@@ -1,6 +1,11 @@
 const express = require('express')
 const User = require('../model/user_model')
 const router = express.Router();
+const config = require('../config')
+const jwt = require('jsonwebtoken')
+const middleware = require('../middlewere')
+
+
 router.route('/register').post((req, res) => {
     console.log('inside register')
     const user = new User({
@@ -49,7 +54,7 @@ router.route('/delete/:username').delete((req, res) => {
         })
 })
 
-router.route('/:username').get((req, res) => {
+router.route('/:username').get(middleware.checkToken,(req, res) => {
     User.findOne(
         { username: req.params.username },
         (err, result) => {
@@ -72,7 +77,14 @@ router.route('/login').post((req, res) => {
                 return res.status(403).json("either username or passworrd incorrect")
             }
             if (result.password === req.body.password) {
-                return res.json("ok")
+                let token = jwt.sign({ username: req.body.username }, config.key,
+                    { expiresIn: '24h' }
+                )
+                return res.json({
+                    token: token,
+                    "msg": "success"
+                })
+
             }
             else {
                 return res.status(403).json("passworrd is incorrect")
